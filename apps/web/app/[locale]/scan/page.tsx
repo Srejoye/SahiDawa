@@ -23,8 +23,10 @@ import Footer from "../components/Footer";
 import { ExpiryBadge } from "@/components/scanner/ExpiryBadge";
 import { verifyMedicine, VerifyResult, VerifiedMedicine } from "@/lib/api";
 
-function formatExpiryForBadge(isoDate: string): string {
+function formatExpiryForBadge(isoDate: string | null | undefined): string | undefined {
+    if (!isoDate) return undefined;
     const d = new Date(isoDate);
+    if (isNaN(d.getTime())) return undefined;
     return `${String(d.getUTCMonth() + 1).padStart(2, "0")}/${d.getUTCFullYear()}`;
 }
 
@@ -433,7 +435,7 @@ export default function ScanPage() {
                 `Generic: ${m.generic_name}`,
                 `Manufacturer: ${m.manufacturer}`,
                 `Batch No: ${m.batch_number}`,
-                `Expiry: ${formatExpiryForBadge(m.expiry_date)}`,
+                `Expiry: ${formatExpiryForBadge(m.expiry_date) ?? "Unknown"}`,
                 `CDSCO Status: ${m.cdsco_approval_status}`,
                 m.is_counterfeit_alert ? "⚠ COUNTERFEIT ALERT" : "Status: Verified",
             ].join("\n");

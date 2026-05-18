@@ -69,7 +69,7 @@ export type VerifiedMedicine = {
     generic_name: string;
     manufacturer: string;
     batch_number: string;
-    expiry_date: string;
+    expiry_date: string | null;
     cdsco_approval_status: string;
     is_counterfeit_alert: boolean;
 };

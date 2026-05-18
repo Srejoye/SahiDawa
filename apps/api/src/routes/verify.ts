@@ -23,12 +23,17 @@ router.post("/", async (req: Request, res: Response) => {
 
     const { batchNumber } = parsed.data;
 
+    const escaped = batchNumber
+        .replace(/\\/g, "\\\\")
+        .replace(/%/g, "\\%")
+        .replace(/_/g, "\\_");
+
     const { data, error } = await supabase
         .from("medicines")
         .select(
             "brand_name, generic_name, manufacturer, batch_number, expiry_date, cdsco_approval_status, is_counterfeit_alert"
         )
-        .ilike("batch_number", batchNumber.replace(/%/g, "\\%").replace(/_/g, "\\_"))
+        .ilike("batch_number", escaped)
         .limit(1)
         .maybeSingle();
 
