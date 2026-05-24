@@ -1,14 +1,13 @@
-# ⚠️  MIGRATED — do not add tests here.
-#
-# These tests have been moved to the unified ETL workspace:
-#   apps/etl/tests/test_loader.py
-#
-# Run them with:
-#   cd apps/etl && pytest tests/test_loader.py
+import json
+import sys
+from pathlib import Path
 
-import pytest
+import pandas as pd
 
-pytest.skip("Migrated to apps/etl/tests/test_loader.py", allow_module_level=True)
+# Ensure src.* imports resolve when running pytest from apps/etl/
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+
+from src.loaders.supabase_loader import SupabaseLoader
 
 
 class FakeExecuteResponse:
@@ -53,6 +52,9 @@ class FakeTable:
 
     def limit(self, value):
         self.limit_value = value
+        return self
+
+    def range(self, start, end):
         return self
 
     def execute(self):
