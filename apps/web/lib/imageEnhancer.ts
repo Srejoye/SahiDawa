@@ -83,16 +83,16 @@ async function enhancePixelsOffThread(
     height: number
 ): Promise<Uint8ClampedArray> {
     const fallbackPixels = new Uint8ClampedArray(pixels);
-    const worker = ensureEnhancementWorker();
-
-    if (!worker) {
-        return enhanceImagePixels(fallbackPixels, width, height);
-    }
-
-    const transferablePixels = new Uint8ClampedArray(pixels);
-    const requestId = `image-enhancement-${workerRequestSequence++}`;
 
     try {
+        const worker = ensureEnhancementWorker();
+        if (!worker) {
+            return enhanceImagePixels(fallbackPixels, width, height);
+        }
+
+        const transferablePixels = new Uint8ClampedArray(pixels);
+        const requestId = `image-enhancement-${workerRequestSequence++}`;
+
         return await new Promise<Uint8ClampedArray>((resolve, reject) => {
             pendingWorkerRequests.set(requestId, { resolve, reject });
 
@@ -107,7 +107,6 @@ async function enhancePixelsOffThread(
             );
         });
     } catch (error) {
-        pendingWorkerRequests.delete(requestId);
         console.warn(
             "Image enhancement worker failed. Falling back to synchronous processing.",
             error

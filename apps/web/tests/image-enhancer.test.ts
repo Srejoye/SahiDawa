@@ -110,8 +110,8 @@ describe("preprocessMedicineImage", () => {
         class MockImage {
             onload: null | (() => void) = null;
             onerror: null | (() => void) = null;
-            width = 2400;
-            height = 1200;
+            width = 2;
+            height = 2;
             crossOrigin = "";
 
             set src(_value: string) {
@@ -151,6 +151,68 @@ describe("preprocessMedicineImage", () => {
         expect(workerInstances).toHaveLength(1);
         expect(workerInstances[0].postMessage).toHaveBeenCalledTimes(1);
         expect(drawFilters).toContain("contrast(1.06) brightness(1.08)");
+        expect(toBlobCalls).toEqual([["image/webp", 0.8]]);
+    });
+
+    it("falls back to synchronous enhancement when worker construction throws", async () => {
+        const toBlobCalls: Array<[string, number | undefined]> = [];
+        const imagePixels = createPixelBuffer([
+            40, 42, 44, 255, 70, 72, 74, 255, 110, 112, 114, 255, 150, 152, 154, 255,
+        ]);
+        const canvases: CanvasMock[] = [];
+
+        globalThis.window = {} as Window & typeof globalThis;
+        globalThis.document = {
+            createElement: jest.fn((tagName: string) => {
+                if (tagName !== "canvas") {
+                    throw new Error(`Unexpected element request: ${tagName}`);
+                }
+
+                const canvas = createCanvas(imagePixels, toBlobCalls);
+                canvases.push(canvas);
+                return {
+                    width: canvas.width,
+                    height: canvas.height,
+                    getContext: jest.fn(() => canvas.context),
+                    toBlob: canvas.toBlob,
+                };
+            }),
+        } as unknown as Document;
+
+        URL.createObjectURL = jest.fn(() => "blob:mock-url");
+        URL.revokeObjectURL = jest.fn();
+
+        class MockImage {
+            onload: null | (() => void) = null;
+            onerror: null | (() => void) = null;
+            width = 2;
+            height = 2;
+            crossOrigin = "";
+
+            set src(_value: string) {
+                this.onload?.();
+            }
+        }
+
+        class ThrowingWorker {
+            constructor() {
+                throw new Error("worker init failed");
+            }
+        }
+
+        globalThis.Image = MockImage as unknown as typeof Image;
+        globalThis.Worker = ThrowingWorker as unknown as typeof Worker;
+
+        const input = new File(["photo"], "medicine.jpg", { type: "image/jpeg" });
+        const result = await preprocessMedicineImage(input);
+        const putImageDataCalls = canvases.reduce(
+            (count, canvas) => count + canvas.context.putImageData.mock.calls.length,
+            0
+        );
+
+        expect(result).toBeInstanceOf(Blob);
+        expect((result as Blob).type).toBe("image/webp");
+        expect(putImageDataCalls).toBe(1);
         expect(toBlobCalls).toEqual([["image/webp", 0.8]]);
     });
 });
