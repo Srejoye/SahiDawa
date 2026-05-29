@@ -13,9 +13,6 @@ type Message = {
 
 export default function Chatbot() {
     const pathname = usePathname();
-    if (pathname.includes("/health")) {
-        return null;
-    }
     const [isOpen, setIsOpen] = useState(false);
     const [messages, setMessages] = useState<Message[]>([
         {
@@ -33,6 +30,11 @@ export default function Chatbot() {
     useEffect(() => {
         scrollToBottom();
     }, [messages]);
+
+    // Securely check route-based visibility after hook declarations to satisfy React Rules of Hooks
+    if (pathname && pathname.includes("/health")) {
+        return null;
+    }
 
     const handleSend = async () => {
         if (!input.trim()) return;
