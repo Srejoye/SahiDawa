@@ -82,16 +82,33 @@ export default function Navbar() {
                     </nav>
 
                     {/* Right — Action Buttons */}
-                    <div className="ml-auto flex shrink-0 items-center justify-end gap-1.5 sm:gap-3">
-                        <button
-                            onClick={() => handleNavigation("health")}
-                            className="flex h-9 w-9 items-center justify-center rounded-full bg-linear-to-r from-blue-500 to-purple-500 text-white transition-all duration-200 hover:scale-105 hover:shadow-lg hover:shadow-purple-500/25 sm:h-10 sm:w-10"
-                            aria-label={tHome("open_ai_health_assistant")}
-                        >
-                            <MessageCircle size={17} />
-                        </button>
+                    <div className="ml-auto flex items-center justify-end gap-2 sm:gap-3">
+                        <div className="group relative flex items-center">
+                            <button
+                                onClick={() => handleNavigation("health")}
+                                className="flex h-9 w-9 items-center justify-center rounded-full bg-linear-to-r from-blue-500 to-purple-500 text-white transition-all duration-200 hover:scale-105 hover:shadow-lg hover:shadow-purple-500/25 sm:h-10 sm:w-10"
+                                aria-label={tHome("open_ai_health_assistant")}
+                            >
+                                <MessageCircle size={17} />
+                            </button>
 
-                        <LanguageSwitcher />
+                            <div
+                                className="pointer-events-none absolute left-1/2 top-full z-50 mt-2 -translate-x-1/2 rounded-md bg-slate-900 px-2 py-1 text-xs font-medium text-white whitespace-nowrap opacity-0 transition-all duration-200 group-hover:opacity-100"
+                            >
+                                Health Companion
+                            </div>
+                        </div>
+
+                        <div className="group relative flex items-center">
+                            <LanguageSwitcher />
+
+                            <div
+                                className="pointer-events-none absolute left-1/2 top-full z-50 mt-2 -translate-x-1/2 rounded-md bg-slate-900 px-2 py-1 text-xs font-medium text-white whitespace-nowrap opacity-0 transition-all duration-200 group-hover:opacity-100"
+                            >
+                                Language
+                            </div>
+                        </div>
+
                         <ThemeToggle />
 
                         <button
