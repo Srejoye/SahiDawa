@@ -93,7 +93,7 @@ jobs:
               env:
                   # LinkedIn OAuth Credentials (add to GitHub Secrets)
                   LINKEDIN_ACCESS_TOKEN: ${{ secrets.LINKEDIN_ACCESS_TOKEN }}
-                  LINKEDIN_PERSON_URN: ${{ secrets.LINKEDIN_PERSON_URN }}
+                  LINKEDIN_ORGANIZATION_URN: ${{ secrets.LINKEDIN_ORGANIZATION_URN }}
 
                   # Gemini AI Key (already in repo secrets for apps/web)
                   GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}

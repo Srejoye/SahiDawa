@@ -10,9 +10,9 @@ How it works:
 3. Posts the content to LinkedIn via the UGC Posts API.
 
 Environment Variables Required (set as GitHub Secrets):
-  - LINKEDIN_ACCESS_TOKEN   : OAuth 2.0 Bearer Token with w_member_social scope
-  - LINKEDIN_PERSON_URN     : LinkedIn Person URN (e.g. urn:li:person:XXXXXX)
-  - GEMINI_API_KEY          : Your Google Gemini API key
+  - LINKEDIN_ACCESS_TOKEN      : OAuth 2.0 Bearer Token with w_organization_social scope
+  - LINKEDIN_ORGANIZATION_URN  : LinkedIn Org URN (e.g. urn:li:organization:12345678)
+  - GEMINI_API_KEY             : Your Google Gemini API key
   - PR_TITLE                : Title of the merged PR
   - PR_AUTHOR               : GitHub username of the contributor
   - PR_URL                  : URL of the merged PR
@@ -187,10 +187,17 @@ def assemble_final_post(ai_content: str, pr: dict) -> str:
 def post_to_linkedin(post_text: str, pr: dict) -> None:
     """
     Makes the API call to publish the post on LinkedIn.
+    Posts on behalf of the RatLoopz ORGANIZATION page (not personal profile).
     Uses the UGC (User Generated Content) Posts v2 API.
+
+    Requires scopes: w_organization_social, r_organization_admin
     """
     access_token = get_env_or_exit("LINKEDIN_ACCESS_TOKEN")
-    person_urn = get_env_or_exit("LINKEDIN_PERSON_URN")
+    organization_urn = get_env_or_exit("LINKEDIN_ORGANIZATION_URN")
+    # Validate format — must be urn:li:organization:XXXXXXXX
+    if not organization_urn.startswith("urn:li:organization:"):
+        print(f"❌ ERROR: LINKEDIN_ORGANIZATION_URN must start with 'urn:li:organization:' — got: {organization_urn}")
+        sys.exit(1)
 
     headers = {
         "Authorization": f"Bearer {access_token}",
@@ -198,9 +205,9 @@ def post_to_linkedin(post_text: str, pr: dict) -> None:
         "X-Restli-Protocol-Version": "2.0.0",
     }
 
-    # UGC Post payload — includes an article link card pointing to the PR
+    # UGC Post payload — posts AS the organization, not a personal profile
     payload = {
-        "author": person_urn,
+        "author": organization_urn,
         "lifecycleState": "PUBLISHED",
         "specificContent": {
             "com.linkedin.ugc.ShareContent": {
@@ -227,7 +234,7 @@ def post_to_linkedin(post_text: str, pr: dict) -> None:
         }
     }
 
-    print(f"📤 Posting to LinkedIn for author URN: {person_urn}")
+    print(f"📤 Posting to LinkedIn as Organization: {organization_urn}")
     response = requests.post(LINKEDIN_API_URL, headers=headers, json=payload, timeout=30)
 
     if response.status_code in (200, 201):
