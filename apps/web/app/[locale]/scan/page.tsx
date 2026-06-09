@@ -46,8 +46,8 @@ import { useOfflineStatus } from "@/hooks/useOfflineStatus";
 import { useTranslations } from "next-intl";
 import { buildVerificationShareText, type VerificationShareCopy } from "@/lib/verificationShare";
 import { structuredLog } from "@/lib/structuredLogger";
-
 import { saveScanHistory } from "@/lib/db/scanHistory";
+import { recordScanHistory } from "@/lib/scanHistoryUtils";
 
 function formatExpiryForBadge(isoDate: string | null | undefined): string | undefined {
     if (!isoDate) return undefined;
@@ -59,18 +59,6 @@ function formatExpiryForBadge(isoDate: string | null | undefined): string | unde
 function expiryToIso(expiryStr: string): string {
     const [month, year] = expiryStr.split("/");
     return `${year}-${month.padStart(2, "0")}-01T00:00:00.000Z`;
-}
-
-function getScanHistoryStatus(result: VerifyResult): string {
-    if (!result.verified) return "SUSPICIOUS";
-    return result.medicine.is_counterfeit_alert ? "FAKE" : "VERIFIED";
-}
-
-function getScanHistoryMedicineName(result: VerifyResult, fallbackBrandName?: string): string {
-    if (result.verified) {
-        return result.medicine.brand_name || fallbackBrandName || "Unknown medicine";
-    }
-    return fallbackBrandName || "Unknown medicine";
 }
 
 function CdscoStatusBadge({ status }: { status: string }) {
@@ -583,12 +571,7 @@ export default function ScanPage() {
             if (!result.verified) {
                 setVerifyResult(result);
 
-                void saveScanHistory({
-                    id: crypto.randomUUID(),
-                    timestamp: Date.now(),
-                    medicineName: getScanHistoryMedicineName(result, fallbackBrandName),
-                    status: getScanHistoryStatus(result),
-                }).catch((error) => {
+                void recordScanHistory(result, fallbackBrandName).catch((error) => {
                     console.error("Failed to save scan history:", error);
                 });
 
@@ -601,12 +584,7 @@ export default function ScanPage() {
                 if (!medicineName) {
                     setVerifyResult(result);
 
-                    void saveScanHistory({
-                        id: crypto.randomUUID(),
-                        timestamp: Date.now(),
-                        medicineName: getScanHistoryMedicineName(result, fallbackBrandName),
-                        status: getScanHistoryStatus(result),
-                    }).catch((error) => {
+                    void recordScanHistory(result, fallbackBrandName).catch((error) => {
                         console.error("Failed to save scan history:", error);
                     });
 
@@ -623,12 +601,7 @@ export default function ScanPage() {
                 } else {
                     setVerifyResult(result);
 
-                    void saveScanHistory({
-                        id: crypto.randomUUID(),
-                        timestamp: Date.now(),
-                        medicineName: getScanHistoryMedicineName(result, fallbackBrandName),
-                        status: getScanHistoryStatus(result),
-                    }).catch((error) => {
+                    void recordScanHistory(result, fallbackBrandName).catch((error) => {
                         console.error("Failed to save scan history:", error);
                     });
 
@@ -638,12 +611,7 @@ export default function ScanPage() {
                 console.error("LASA check error:", error);
                 setVerifyResult(result);
 
-                void saveScanHistory({
-                    id: crypto.randomUUID(),
-                    timestamp: Date.now(),
-                    medicineName: getScanHistoryMedicineName(result, fallbackBrandName),
-                    status: getScanHistoryStatus(result),
-                }).catch((historyError) => {
+                void recordScanHistory(result, fallbackBrandName).catch((historyError) => {
                     console.error("Failed to save scan history:", historyError);
                 });
 
@@ -656,12 +624,7 @@ export default function ScanPage() {
     const handleConfirmScanned = () => {
         if (pendingVerifyResult) {
             setVerifyResult(pendingVerifyResult);
-            void saveScanHistory({
-                id: crypto.randomUUID(),
-                timestamp: Date.now(),
-                medicineName: getScanHistoryMedicineName(pendingVerifyResult),
-                status: getScanHistoryStatus(pendingVerifyResult),
-            }).catch((error) => {
+            void recordScanHistory(pendingVerifyResult).catch((error) => {
                 console.error("Failed to save scan history:", error);
             });
             setShowLasaConfirmation(false);
