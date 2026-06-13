@@ -1,4 +1,4 @@
-from __future__ import annotations
+from __future__ import annotations  # MUST BE LINE 1
 
 import json
 import io
@@ -6,18 +6,20 @@ import wave
 from json import JSONDecodeError
 from contextlib import asynccontextmanager
 from collections.abc import Callable
-from fastapi import APIRouter, UploadFile, File, Form, HTTPException, WebSocket, WebSocketDisconnect
-import noisereduce as nr
-import numpy as np
 import tempfile
 import warnings
 import subprocess
-import soundfile as sf
 import logging
 import os
 import threading
 
+from fastapi import APIRouter, UploadFile, File, Form, HTTPException, WebSocket, WebSocketDisconnect
+import noisereduce as nr
+import numpy as np
+import soundfile as sf
 from faster_whisper import WhisperModel
+
+from services.fuzzy_matcher import get_phonetic_fuzzy_match  # Imported utility service
 from services.telemetry import (
     get_audio_duration_seconds,
     get_memory_usage_mb,
@@ -86,6 +88,7 @@ WHISPER_BEAM_SIZE = parse_beam_size(os.getenv("WHISPER_BEAM_SIZE"))
 def should_preload_model_on_startup() -> bool:
     return WHISPER_PRELOAD_ON_STARTUP in {"1", "true", "yes", "on"}
 
+
 def get_model():
     global model
     if model is None:
@@ -108,6 +111,19 @@ def preload_model_if_configured() -> None:
     if should_preload_model_on_startup():
         logger.info("Preloading Whisper model during startup...")
         get_model()
+
+
+def get_medicine_database_list() -> list[str]:
+    """
+    Utility helper to fetch valid medicine masters from backend DB layers.
+    Includes baseline fallback targets for test execution parameters.
+    """
+    try:
+        # TODO: Link to actual database schema or configuration lookup when fully connected to Supabase seeds
+        return ["Paracetamol", "Crocin", "Amoxicillin", "Ibuprofen", "Aspirin", "Metformin"]
+    except Exception as e:
+        logger.warning(f"Failed to query medicine master dataset: {e}")
+        return []
 
 
 @asynccontextmanager
@@ -314,8 +330,24 @@ def _transcribe_audio_bytes(
             f"prob={info.language_probability:.2f} | chars={len(transcript)}"
         )
 
+        # Apply Stage 1 & Stage 2 Pipeline Match Corrections
+        medicine_db = get_medicine_database_list()
+        fuzzy_match = get_phonetic_fuzzy_match(transcript, medicine_db)
+
+        corrected_name = transcript
+        suggestion_applied = False
+        message = None
+
+        if fuzzy_match and fuzzy_match["is_corrected"]:
+            corrected_name = fuzzy_match["matched_name"]
+            suggestion_applied = True
+            message = f"Showing results for {corrected_name} — did you mean this?"
+
         return {
             "transcription": transcript,
+            "corrected_name": corrected_name,
+            "suggestion_applied": suggestion_applied,
+            "message": message,
             "language": info.language,
             "language_probability": round(info.language_probability, 3),
             "filename": original_name,
@@ -599,9 +631,24 @@ class StreamingAsrSession:
         self.audio_buffer = self.audio_buffer[samples_to_trim:]
         self.buffer_start_seconds += samples_to_trim / STREAM_SAMPLE_RATE
 
-    def _build_response(self, transcript: str) -> dict[str, str | float | None]:
+    def _build_response(self, transcript: str) -> dict[str, str | float | bool | None]:
+        medicine_db = get_medicine_database_list()
+        fuzzy_match = get_phonetic_fuzzy_match(transcript, medicine_db)
+
+        corrected_name = transcript
+        suggestion_applied = False
+        message = None
+
+        if fuzzy_match and fuzzy_match["is_corrected"]:
+            corrected_name = fuzzy_match["matched_name"]
+            suggestion_applied = True
+            message = f"Showing results for {corrected_name} — did you mean this?"
+
         return {
             "transcript": transcript,
+            "corrected_name": corrected_name,
+            "suggestion_applied": suggestion_applied,
+            "message": message,
             "language": self.last_language,
             "languageConfidence": self.last_language_confidence,
         }
@@ -711,6 +758,9 @@ class StreamingAsrSession:
         if self.decoder is None:
             return {
                 "transcript": "",
+                "corrected_name": "",
+                "suggestion_applied": False,
+                "message": None,
                 "language": None,
                 "languageConfidence": None,
             }
@@ -729,23 +779,7 @@ class StreamingAsrSession:
         self.decoder = None
 
 
-@router.post(
-        "/transcribe",
-        responses={
-            400: {
-                "description": "Invalid audio input, unsupported format, corrupted audio, or duration exceeds limit."
-            },
-            422: {
-                "description": "Unable to process the uploaded audio file."
-            },
-            503: {
-                "description": "Transcription service temporarily unavailable."
-            },
-            500: {
-                "description": "Internal server error during transcription."
-            },
-        },
-)
+@router.post("/transcribe")
 async def transcribe_audio(file: UploadFile = File(...), language: str | None = Form(default=None)):
     """
     Accepts any supported audio file upload and returns transcribed text.
@@ -753,10 +787,6 @@ async def transcribe_audio(file: UploadFile = File(...), language: str | None = 
     Supports: WAV, MP3, OGG, WebM, MP4, FLAC
     Returns: transcription text, detected language code, language confidence,
              and echoed filename.
-
-    Internally normalizes all formats to 16kHz mono WAV via FFmpeg before
-    passing to faster-whisper — ensures compatibility across all container
-    environments regardless of libsndfile codec availability.
     """
     contents = await file.read()
     original_name = file.filename or "upload"
