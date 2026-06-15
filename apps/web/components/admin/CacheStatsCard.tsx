@@ -4,11 +4,7 @@
 import dynamic from "next/dynamic";
 import { useEffect, useState } from "react";
 import { ADMIN_API_BASE } from "@/lib/adminApi";
-
-function getToken(): string {
-    if (typeof window === "undefined") return "";
-    return localStorage.getItem("sb-access-token") ?? "";
-}
+import { useSession } from "@/src/components/AuthProvider";
 
 // SSR-safe Recharts import — fixes hydration mismatch (issue #1303)
 const BarChart = dynamic(() => import("recharts").then((mod) => mod.BarChart as any), {
@@ -40,13 +36,13 @@ interface CacheStats {
 }
 
 export default function CacheStatsCard() {
+    const { token } = useSession();
     const [stats, setStats] = useState<CacheStats | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
     const fetchStats = async () => {
         try {
-            const token = getToken();
             const res = await fetch(`${ADMIN_API_BASE}/cache/stats`, {
                 headers: {
                     Authorization: `Bearer ${token}`,
@@ -67,11 +63,12 @@ export default function CacheStatsCard() {
     };
 
     useEffect(() => {
+        if (!token) return;
         fetchStats();
         // auto-refresh every 30 seconds
         const interval = setInterval(fetchStats, 30_000);
         return () => clearInterval(interval);
-    }, []);
+    }, [token]);
 
     if (loading)
         return (
