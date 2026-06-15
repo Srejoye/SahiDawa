@@ -34,6 +34,8 @@ export type ReportPayload = {
     pincode: string;
     latitude?: number;
     longitude?: number;
+    scannedBarcode?: string;
+    medicineId?: string;
 };
 
 export type SubmittedReport = {
@@ -166,8 +168,18 @@ export type ScanMeta = {
 };
 
 export type VerifyResult =
-    | { verified: true; medicine: VerifiedMedicine; scanMeta?: ScanMeta }
-    | { verified: false; message: string; scanMeta?: ScanMeta };
+    | {
+          verified: true;
+          medicine: VerifiedMedicine;
+          scanMeta?: ScanMeta;
+          batch_status?: "safe" | "recalled" | "unknown";
+      }
+    | {
+          verified: false;
+          message: string;
+          scanMeta?: ScanMeta;
+          batch_status?: "safe" | "recalled" | "unknown";
+      };
 
 export type VerifiedPharmacy = {
     name: string;
