@@ -1,36 +1,40 @@
 import { Router, Request, Response } from "express";
 import { supabase } from "../db/client";
+import { requireAuth } from "../middleware/auth"; // Ensure this matches your project
+import { z } from "zod";
 
 const router = Router();
 
-// GET tracked medicines
-router.get("/tracked", async (req: Request, res: Response) => {
-    // Note: If you want to use authentication, add requireAuth as middleware
-    const { data, error } = await supabase.from("tracked_medicines").select("*");
+// Validation schema
+const trackSchema = z.object({
+    medicine_id: z.string(),
+    medicine_name: z.string().min(1),
+    batch_number: z.string().optional(),
+    expiry_date: z.string(), // or .datetime()
+});
+
+router.get("/tracked", requireAuth, async (req: Request, res: Response) => {
+    const userId = (req as any).user.id;
+    const { data, error } = await supabase
+        .from("tracked_medicines")
+        .select("*")
+        .eq("user_id", userId); // Security: Only get current user's data
 
     if (error) return res.status(500).json({ error: error.message });
     res.json(data);
 });
 
-// POST track a medicine
-router.post("/track", async (req: Request, res: Response) => {
-    const { medicine_id, medicine_name, batch_number, expiry_date } = req.body;
+router.post("/track", requireAuth, async (req: Request, res: Response) => {
+    const result = trackSchema.safeParse(req.body);
+    if (!result.success) return res.status(400).json(result.error);
 
+    const userId = (req as any).user.id;
     const { data, error } = await supabase
         .from("tracked_medicines")
-        .insert([{ medicine_id, medicine_name, batch_number, expiry_date }]);
+        .insert([{ ...result.data, user_id: userId }]);
 
     if (error) return res.status(500).json({ error: error.message });
     res.status(201).json({ message: "Medicine tracked successfully", data });
-});
-
-// DELETE tracked medicine
-router.delete("/track/:id", async (req: Request, res: Response) => {
-    const { id } = req.params;
-    const { error } = await supabase.from("tracked_medicines").delete().eq("id", id);
-
-    if (error) return res.status(500).json({ error: error.message });
-    res.json({ message: "Tracked medicine removed" });
 });
 
 export default router;
