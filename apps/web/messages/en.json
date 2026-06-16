@@ -920,5 +920,9 @@
             "timeout": "Location request timed out.",
             "generic": "Unable to get your location."
         }
+    },
+    "Tracking": {
+        "success": "Medicine tracked successfully!",
+        "trackButton": "Track Expiry"
     }
 }
