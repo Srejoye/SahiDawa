@@ -14,6 +14,7 @@ import {
     BellOff,
     RefreshCw,
     Download,
+    Building2,
 } from "lucide-react";
 import { useTranslations } from "next-intl";
 import RecallPushSubscriber from "@/components/alerts/RecallPushSubscriber";
@@ -177,6 +178,7 @@ export default function FullAlertsLogPage() {
         setExpandedAlertId((prev) => (prev === id ? null : id));
     };
 
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const handleShareAlert = (e: React.MouseEvent, alert: Alert) => {
         e.stopPropagation();
         const brand =
@@ -455,11 +457,11 @@ export default function FullAlertsLogPage() {
                                             role="button"
                                             aria-expanded={expandedAlertId === alert.id}
                                             onKeyDown={(e) => {
-                                            if (e.key === "Enter" || e.key === " ") {
-                                                e.preventDefault();
-                                                toggleExpand(alert.id);
-                                            }
-                                        }}
+                                                if (e.key === "Enter" || e.key === " ") {
+                                                    e.preventDefault();
+                                                    toggleExpand(alert.id);
+                                                }
+                                            }}
                                             className={`group relative flex cursor-pointer flex-col overflow-hidden rounded-3xl border bg-(--color-surface-page) p-6 shadow-xs transition-all focus:ring-2 focus:ring-emerald-500/20 focus:outline-hidden ${
                                                 expandedAlertId === alert.id
                                                     ? "border-emerald-500/30 ring-2 ring-emerald-500/5"
@@ -579,7 +581,8 @@ export default function FullAlertsLogPage() {
                                                                 : ""
                                                         }`}
                                                     />
-
+                                                </div>
+                                            </div>
                                         </motion.div>
                                     );
                                 })}
@@ -610,7 +613,7 @@ export default function FullAlertsLogPage() {
                                 </span>
                             </div>
                         )}
-                    
+
                         {!hasMore && totalCount > 0 && (
                             <div className="text-center text-sm font-semibold text-(--color-text-muted)">
                                 ✅ You've seen all {totalCount} safety alerts
