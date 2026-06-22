@@ -92,7 +92,7 @@ describe("SignUpPage", () => {
         expect(screen.getByLabelText(/full name/i)).toBeInTheDocument();
         expect(screen.getByLabelText(/^email address$/i)).toBeInTheDocument();
         expect(screen.getByLabelText(/^password$/i)).toBeInTheDocument();
-        expect(screen.getByLabelText(/confirm password/i)).toBeInTheDocument();
+        expect(screen.getByLabelText(/^confirm password$/i)).toBeInTheDocument();
         expect(screen.getByRole("button", { name: /continue with google/i })).toBeInTheDocument();
         expect(screen.getByRole("button", { name: /continue with github/i })).toBeInTheDocument();
 
@@ -112,7 +112,7 @@ describe("SignUpPage", () => {
         fireEvent.change(screen.getByLabelText(/^password$/i), {
             target: { value: "Password1" },
         });
-        fireEvent.change(screen.getByLabelText(/confirm password/i), {
+        fireEvent.change(screen.getByLabelText(/^confirm password$/i), {
             target: { value: "Password2" },
         });
 
@@ -134,7 +134,7 @@ describe("SignUpPage", () => {
         fireEvent.change(screen.getByLabelText(/^password$/i), {
             target: { value: "Password1" },
         });
-        fireEvent.change(screen.getByLabelText(/confirm password/i), {
+        fireEvent.change(screen.getByLabelText(/^confirm password$/i), {
             target: { value: "Password1" },
         });
 
