@@ -3,6 +3,7 @@ import { z } from "zod";
 import { supabase } from "../db/client";
 import logger from "../utils/logger";
 import { redisClient } from "../utils/redis";
+import { limiter } from "../middleware/rateLimit";
 import { requireAuth, AuthenticatedRequest } from "../middleware/auth";
 import { FormattedPharmacy, PharmacyRpcResult } from "../types/pharmacy.types";
 
@@ -373,7 +374,7 @@ function handleFetchError(
  *       500:
  *         description: Server or database error
  */
-router.get("/nearest", async (req: Request, res: Response, next: NextFunction) => {
+router.get("/nearest", limiter, async (req: Request, res: Response, next: NextFunction) => {
     try {
         const result = nearestQuerySchema.safeParse(req.query);
 
