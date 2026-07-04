@@ -258,6 +258,7 @@ alertsRouter.post("/ingest", requireApiKey, limiter, async (req: ApiKeyRequest, 
  */
 alertsRouter.patch(
     "/:id/snooze",
+    limiter,
     requireAuth,
     requireRole("admin", "moderator"),
     async (req, res: Response) => {

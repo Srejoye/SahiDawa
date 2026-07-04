@@ -3,7 +3,7 @@ import { z } from "zod";
 import { supabase } from "../db/client";
 import { uuidSchema } from "../utils/validation";
 import { AuthenticatedRequest, optionalAuth, requireAuth, requireRole } from "../middleware/auth";
-import { reportLimiter } from "../middleware/rateLimit";
+import { reportLimiter, limiter } from "../middleware/rateLimit";
 import {
     validateReport,
     computeReportHash,
@@ -502,6 +502,7 @@ reportsRouter.patch(
  */
 reportsRouter.patch(
     "/:id/snooze",
+    limiter,
     requireAuth,
     requireRole("admin", "moderator"),
     async (req, res: Response) => {
