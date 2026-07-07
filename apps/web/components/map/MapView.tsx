@@ -115,14 +115,14 @@ export default function MapView() {
 
             {/* Map Container with the ref applied */}
             <div ref={mapContainerRef as any}>
-                <MapContainer
-                    center={userLocation}
-                    zoom={13}
-                    style={{ height: "500px", width: "100%" }}
-                >
-                    <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
-                    {/* Markers ... */}
-                </MapContainer>
+            <MapContainer
+                center={userLocation}
+                zoom={13}
+                style={{ height: "500px", width: "100%" }}
+            >
+                <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+                      {/* Markers ... */}
+            </MapContainer>
             </div>
         </div>
     );
