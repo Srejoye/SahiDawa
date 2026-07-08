@@ -2,6 +2,7 @@ import { Router, Request, Response } from "express";
 import { requireAuth, AuthenticatedRequest } from "../middleware/auth";
 import { limiter } from "../middleware/rateLimit";
 import { z } from "zod";
+import crypto from "crypto";
 import {
     generateOTP,
     verifyOTP,
@@ -9,6 +10,10 @@ import {
     uploadVerification,
     unlinkABHA,
     getAbhaStatus,
+    generatePkcePair,
+    getAuthorizationUrl,
+    exchangeAuthCode,
+    downloadHealthRecords,
 } from "../services/abha.service";
 
 // In-memory token storage tracker mapping short lived state criteria
@@ -207,7 +212,7 @@ router.delete(
 
 // GET /api/v1/abha/authorize
 // Generates authorization target payload URL
-router.get("/authorize", requireAuth, async (req: any, res: Response): Promise<void> => {
+router.get("/authorize", limiter, requireAuth, async (req: any, res: Response): Promise<void> => {
     try {
         const userId = req.user?.id;
         if (!userId) {
@@ -235,7 +240,7 @@ router.get("/authorize", requireAuth, async (req: any, res: Response): Promise<v
 
 // GET /api/v1/abha/callback
 // Handles ABDM redirect execution flow
-router.get("/callback", async (req: Request, res: Response): Promise<void> => {
+router.get("/callback", limiter, async (req: Request, res: Response): Promise<void> => {
     try {
         const { code, state } = req.query;
         if (!code || !state) {
@@ -268,8 +273,8 @@ router.get("/callback", async (req: Request, res: Response): Promise<void> => {
 // Syncs and downlinks FHIR metrics
 router.get(
     "/health-records",
-    requireAuth,
     limiter,
+    requireAuth,
     async (req: any, res: Response): Promise<void> => {
         try {
             const userId = req.user?.id;
